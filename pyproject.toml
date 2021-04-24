@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "iidx_tool"
+version = "0.1.0"
+description = ""
+authors = ["muro3r"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.25.1"
+beautifulsoup4 = "^4.9.3"
+SQLAlchemy = "^1.4.11"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.3"
+autopep8 = "^1.5.6"
+pytest-watch = "^4.2.0"
+sqlalchemy-stubs = "^0.4"
+requests-mock = "^1.8.0"
+wemake-python-styleguide = "^0.15.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,8 +1,9 @@
-from dataclasses import dataclass
+import json
 import re
+from dataclasses import dataclass
+
 import requests
-from bs4 import BeautifulSoup
-from bs4 import element
+from bs4 import BeautifulSoup, element
 
 
 @dataclass
@@ -10,16 +11,12 @@ class Difficulty:
     official_difficulty: int
     unofficial_difficulty: float
 
-    def __post_init__(self):
-        self.official_difficulty = int(self.official_difficulty)
-        self.unofficial_difficulty = float(self.unofficial_difficulty)
-
 
 class Song:
-    title: str
     hyper: Difficulty
     another: Difficulty
     leggendaria: Difficulty
+    title: str
 
 
 def download_unofficial_difficulty_table() -> BeautifulSoup:
@@ -32,8 +29,10 @@ def download_unofficial_difficulty_table() -> BeautifulSoup:
 def parse_unofficial_difficulty_table(bs: BeautifulSoup) -> list[Song]:
     rows = bs.find_all('tr')
 
-    result = []
+    songs: list[Song] = []
 
+    pattern = re.compile(r'☆(\d+)\s\((\d{1,}\.\d+)\)')
+    difficulties = ['hyper', 'another', 'legenddaria']
     row: 'element.Tag'
     for row in rows:
         song_title = row.select_one('td.music')
@@ -43,20 +42,34 @@ def parse_unofficial_difficulty_table(bs: BeautifulSoup) -> list[Song]:
         song = Song()
         song.title = song_title.text
 
-        datum = row.find_all('td')
+        cells = row.find_all('td')
 
-        m = re.match(r'^\n☆(\d+) \((\d{1,}\.\d)\)\n$', datum[0].text)
-        if not m:
-            continue
-        o_diff, uno_diff = m.groups()
+        for num, diff in enumerate(difficulties):
+            match = re.match(pattern, cells[num].text)
 
-        song.hyper = Difficulty(o_diff, uno_diff)
+            if not match:
+                continue
 
-        result.append(song)
+            o_diff, uno_diff = match.groups()
+            o_diff = int(o_diff)
+            uno_diff = float(uno_diff)
+            setattr(song, diff, Difficulty(o_diff, uno_diff))
 
-    return result
+        songs.append(song)
+
+    return songs
+
+
+def dump_difficultiy_table(songs: list[Song]) -> None:
+    text = [song.__dict__ for song in songs]
+
+    with open('out.json', 'w') as f:
+        f.write(json.dumps(text, default=lambda o: o.__dict__, ensure_ascii=False))
 
 
 if __name__ == '__main__':
+    bs = download_unofficial_difficulty_table()
 
-    pass
+    songs = parse_unofficial_difficulty_table(bs)
+
+    dump_difficultiy_table(songs)
